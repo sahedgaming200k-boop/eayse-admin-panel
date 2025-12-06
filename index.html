@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Super App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Poppins', sans-serif; background: #f8fafc; }
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        .sidebar-open { transform: translateX(0) !important; }
+        .sidebar-closed { transform: translateX(-100%); }
+        .nav-item.active { background: rgba(255, 255, 255, 0.15); border-left: 4px solid #38bdf8; }
+        #login-overlay { z-index: 9999; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden text-slate-800">
+
+    <!-- LOGIN LOCK -->
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900 flex items-center justify-center p-6">
+        <div class="bg-white rounded-2xl p-8 w-full max-w-sm text-center shadow-2xl">
+            <h2 class="text-2xl font-bold mb-2">Admin Login</h2>
+            <input type="password" id="admin-pass" placeholder="Password" class="w-full p-3 border rounded-xl mb-4 text-center">
+            <button onclick="checkLogin()" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">Login</button>
+            <p id="login-error" class="text-red-500 mt-2 hidden text-sm">Wrong Password!</p>
+        </div>
+    </div>
+
+    <!-- MOBILE OVERLAY -->
+    <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white sidebar-closed lg:translate-x-0 lg:static flex flex-col">
+        <div class="p-6 flex justify-between items-center border-b border-slate-700">
+            <span class="text-xl font-bold text-blue-400">ADMIN PANEL</span>
+            <button onclick="toggleSidebar()" class="lg:hidden text-gray-400"><i class="fas fa-times"></i></button>
+        </div>
+        <nav class="flex-1 overflow-y-auto p-4 space-y-1">
+            <a href="#" onclick="nav('dashboard')" id="lnk-dashboard" class="nav-item active flex items-center px-4 py-3 rounded-lg"><i class="fas fa-chart-pie w-6 text-blue-400"></i> ড্যাশবোর্ড</a>
+            <a href="#" onclick="nav('orders')" id="lnk-orders" class="nav-item flex items-center px-4 py-3 rounded-lg"><i class="fas fa-tasks w-6 text-yellow-400"></i> অর্ডার (Tasks)</a>
+            <a href="#" onclick="nav('reset')" id="lnk-reset" class="nav-item flex items-center px-4 py-3 rounded-lg"><i class="fas fa-key w-6 text-red-400"></i> পাসওয়ার্ড রিসেট</a>
+            <a href="#" onclick="nav('users')" id="lnk-users" class="nav-item flex items-center px-4 py-3 rounded-lg"><i class="fas fa-users w-6 text-green-400"></i> ইউজার লিস্ট</a>
+            <a href="#" onclick="nav('withdraw')" id="lnk-withdraw" class="nav-item flex items-center px-4 py-3 rounded-lg"><i class="fas fa-wallet w-6 text-purple-400"></i> পেমেন্ট</a>
+            <a href="#" onclick="nav('menu')" id="lnk-menu" class="nav-item flex items-center px-4 py-3 rounded-lg"><i class="fas fa-bars w-6 text-pink-400"></i> মেনু লিংক</a>
+            <a href="#" onclick="nav('pages')" id="lnk-pages" class="nav-item flex items-center px-4 py-3 rounded-lg"><i class="fas fa-file-alt w-6 text-cyan-400"></i> পলিসি পেজ</a>
+            <a href="#" onclick="nav('settings')" id="lnk-settings" class="nav-item flex items-center px-4 py-3 rounded-lg"><i class="fas fa-cogs w-6 text-gray-400"></i> সেটিংস</a>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col h-full overflow-hidden">
+        <header class="bg-white shadow-sm h-16 flex items-center justify-between px-4 z-10">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="lg:hidden text-2xl"><i class="fas fa-bars"></i></button>
+                <h2 class="text-lg font-bold" id="header-title">ড্যাশবোর্ড</h2>
+            </div>
+            <span class="text-xs font-bold bg-gray-100 px-3 py-1 rounded-full">Admin</span>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 lg:p-6 bg-slate-50">
+            
+            <!-- DASHBOARD -->
+            <div id="pg-dashboard" class="page block">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="bg-blue-600 text-white p-6 rounded-2xl shadow-lg">
+                        <p class="text-sm opacity-80">Total Users</p>
+                        <h3 class="text-4xl font-bold" id="stat-users">0</h3>
+                    </div>
+                    <div class="bg-orange-500 text-white p-6 rounded-2xl shadow-lg">
+                        <p class="text-sm opacity-80">Pending Tasks</p>
+                        <h3 class="text-4xl font-bold" id="stat-tasks">0</h3>
+                    </div>
+                    <div class="bg-purple-600 text-white p-6 rounded-2xl shadow-lg">
+                        <p class="text-sm opacity-80">Withdraw Req</p>
+                        <h3 class="text-4xl font-bold" id="stat-withdraw">0</h3>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ORDERS -->
+            <div id="pg-orders" class="page hidden">
+                <h3 class="font-bold text-gray-700 mb-2 border-b pb-2">📋 User Tasks List</h3>
+                <div id="order-list" class="space-y-4"></div>
+            </div>
+
+            <!-- RESET PASS -->
+            <div id="pg-reset" class="page hidden">
+                <h3 class="font-bold text-gray-700 mb-4 border-b pb-2">🔑 Password Reset Requests</h3>
+                <div id="pass-req-list" class="space-y-3"></div>
+            </div>
+
+            <!-- USERS -->
+            <div id="pg-users" class="page hidden">
+                <input type="text" id="search-user" onkeyup="filterUsers()" placeholder="Search user..." class="w-full p-3 border rounded-xl mb-4 bg-white">
+                <!-- User List Grid -->
+                <div id="user-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pb-10"></div>
+            </div>
+
+            <!-- WITHDRAW -->
+            <div id="pg-withdraw" class="page hidden">
+                <div id="withdraw-list" class="space-y-4"></div>
+            </div>
+
+            <!-- MENU -->
+            <div id="pg-menu" class="page hidden">
+                <div class="bg-white p-6 rounded-2xl shadow-sm max-w-lg mx-auto mb-6">
+                    <h3 class="font-bold mb-4">External Links (YouTube/FB)</h3>
+                    <div class="space-y-3">
+                        <input type="hidden" id="menu-edit-key">
+                        <input type="text" id="menu-name" placeholder="Name (Ex: YouTube)" class="w-full p-3 border rounded-xl">
+                        <input type="text" id="menu-link" placeholder="URL (https://...)" class="w-full p-3 border rounded-xl">
+                        <input type="text" id="menu-icon" placeholder="Icon URL" class="w-full p-3 border rounded-xl">
+                        <button onclick="addMenuLink()" id="btn-menu-add" class="w-full bg-slate-800 text-white py-3 rounded-xl font-bold">Add Link</button>
+                    </div>
+                </div>
+                <div id="menu-list" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <!-- PAGES -->
+            <div id="pg-pages" class="page hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold mb-2">Privacy Policy</h3>
+                        <textarea id="page-privacy" rows="10" class="w-full p-3 border rounded-xl mb-3"></textarea>
+                        <button onclick="savePageContent('privacyPolicy', 'page-privacy')" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold w-full">Save Policy</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold mb-2">Terms & Conditions</h3>
+                        <textarea id="page-terms" rows="10" class="w-full p-3 border rounded-xl mb-3"></textarea>
+                        <button onclick="savePageContent('termsConditions', 'page-terms')" class="bg-orange-500 text-white px-6 py-2 rounded-lg font-bold w-full">Save Terms</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS -->
+            <div id="pg-settings" class="page hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold mb-4">General Settings</h3>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm text-gray-500">Per Task (Tk)</label>
+                            <input type="number" id="set-price" class="w-full p-3 border rounded-xl font-bold">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm text-gray-500">Min Withdraw (Tk)</label>
+                            <input type="number" id="set-min" class="w-full p-3 border rounded-xl font-bold">
+                        </div>
+
+                        <!-- NEW: GMAIL NOTE INPUT -->
+                        <div class="mb-4 pt-4 border-t">
+                            <label class="block text-sm text-blue-600 font-bold mb-1">Today's Gmail Note/Pass</label>
+                            <input type="text" id="set-gmail-note" placeholder="Ex: Pass1234 or Instruction" class="w-full p-3 border rounded-xl font-bold bg-blue-50 text-blue-800">
+                            <p class="text-[10px] text-gray-400 mt-1">This text will show on user home page</p>
+                        </div>
+                        <!-- END NEW -->
+
+                        <button onclick="saveGeneralSettings()" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">Save Settings</button>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl shadow-sm">
+                        <h3 class="font-bold mb-4">Payment Methods</h3>
+                        <div class="space-y-3 mb-4">
+                            <input type="hidden" id="pm-edit-key">
+                            <input type="text" id="pm-name" placeholder="Name (Ex: bKash)" class="w-full p-3 border rounded-xl">
+                            <input type="text" id="pm-logo" placeholder="Logo URL" class="w-full p-3 border rounded-xl">
+                            <button onclick="addPaymentMethod()" id="btn-pm-add" class="w-full bg-green-600 text-white py-3 rounded-xl font-bold">Add Method</button>
+                        </div>
+                        <div id="pm-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="bal-modal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-2xl w-full max-w-sm">
+            <h3 class="font-bold mb-2">Manage Balance</h3>
+            <p id="bal-user" class="text-xs text-gray-500 mb-4"></p>
+            <input type="number" id="bal-amt" placeholder="Amount" class="w-full p-3 border rounded-xl mb-4">
+            <div class="flex gap-2">
+                <button onclick="modBal('add')" class="flex-1 bg-green-500 text-white py-2 rounded-xl">Add (+)</button>
+                <button onclick="modBal('cut')" class="flex-1 bg-red-500 text-white py-2 rounded-xl">Cut (-)</button>
+            </div>
+            <button onclick="document.getElementById('bal-modal').classList.add('hidden')" class="w-full mt-4 text-sm text-gray-400">Cancel</button>
+        </div>
+    </div>
+
+    <div id="pass-modal" class="hidden fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+        <div class="bg-white p-6 rounded-2xl w-full max-w-sm">
+            <h3 class="font-bold mb-2">Edit Password</h3>
+            <p id="pass-user-email" class="text-xs text-gray-500 mb-4"></p>
+            <input type="text" id="new-user-pass" placeholder="New Password" class="w-full p-3 border rounded-xl mb-4">
+            <button onclick="saveNewUserPass()" class="w-full bg-blue-600 text-white py-2 rounded-xl">Update</button>
+            <button onclick="document.getElementById('pass-modal').classList.add('hidden')" class="w-full mt-4 text-sm text-gray-400">Cancel</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-app.js";
+        import { getDatabase, ref, update, onValue, runTransaction, push, remove, set } from "https://www.gstatic.com/firebasejs/9.1.0/firebase-database.js";
+
+        const app = initializeApp({
+            apiKey: "AIzaSyAabc2Xiz70fJRDFXNhYVJzSv1tN0FOkCI",
+            authDomain: "sell-8bcdf.firebaseapp.com",
+            databaseURL: "https://sell-8bcdf-default-rtdb.firebaseio.com",
+            projectId: "sell-8bcdf",
+            storageBucket: "sell-8bcdf.firebasestorage.app",
+            messagingSenderId: "747914851664",
+            appId: "1:747914851664:web:8f25ed9db2dcd822ca6855"
+        });
+        const db = getDatabase(app);
+        let adminPass = "123456", curUser = null;
+
+        // AUTH
+        onValue(ref(db, 'settings/adminPassword'), s => { if(s.exists()) adminPass = s.val(); });
+        window.checkLogin = () => {
+            if(document.getElementById('admin-pass').value === adminPass) document.getElementById('login-overlay').classList.add('hidden');
+            else document.getElementById('login-error').classList.remove('hidden');
+        }
+
+        // STATS
+        onValue(ref(db, 'users'), s => {
+            document.getElementById('stat-users').innerText = s.size;
+        });
+        
+        onValue(ref(db, 'orders'), s => {
+            let p = 0; s.forEach(c => { if (c.val().status === 'pending') p++; });
+            document.getElementById('stat-tasks').innerText = p;
+        });
+        onValue(ref(db, 'withdrawals'), s => {
+            let p = 0; s.forEach(c => { if (c.val().status === 'pending') p++; });
+            document.getElementById('stat-withdraw').innerText = p;
+        });
+
+        // PASSWORD REQUESTS
+        onValue(ref(db, 'password_requests'), s => {
+            const d = document.getElementById('pass-req-list'); d.innerHTML = '';
+            let hasReq = false;
+            s.forEach(c => {
+                hasReq = true;
+                const r = c.val();
+                const emailToShow = r.email ? r.email : "No Email Found";
+                d.innerHTML += `
+                <div class="bg-white p-4 rounded-xl border border-red-100 shadow-sm flex justify-between items-center">
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-key text-red-500"></i>
+                            <span class="text-xs font-bold text-gray-400">REQUEST</span>
+                        </div>
+                        <p class="font-bold text-gray-800 text-lg">${emailToShow}</p>
+                    </div>
+                    <button onclick="deletePassReq('${c.key}')" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-slate-900">
+                        <i class="fas fa-check-circle"></i> Done
+                    </button>
+                </div>`;
+            });
+            if(!hasReq) d.innerHTML = '<div class="text-center py-10 text-gray-400">No password reset requests</div>';
+        });
+
+        window.deletePassReq = (key) => {
+            if(confirm("Mark as done?")) remove(ref(db, `password_requests/${key}`));
+        }
+
+        // ORDERS
+        onValue(ref(db, 'orders'), s => {
+            const div = document.getElementById('order-list'); div.innerHTML = '';
+            let h = false;
+            const pendingTasks = [];
+            s.forEach(c => {
+                const val = c.val();
+                if(val.status === 'pending') {
+                    pendingTasks.push({k: c.key, ...val});
+                }
+            });
+            if(pendingTasks.length > 0) {
+                h = true;
+                pendingTasks.reverse().forEach(o => {
+                    div.innerHTML += `
+                    <div class="bg-white p-5 rounded-xl border-l-4 border-orange-500 flex flex-col md:flex-row justify-between gap-4 shadow-sm">
+                        <div>
+                            <div class="flex items-center gap-2 mb-1">
+                                 <span class="text-xs font-bold text-gray-500 uppercase"><i class="fas fa-user"></i> ${o.userName || 'User'}</span>
+                                 <span class="bg-orange-100 text-orange-700 px-2 rounded font-bold text-[10px]">TASK</span>
+                            </div>
+                            <p class="font-bold text-blue-600 text-sm select-all"><span class="text-gray-400 text-xs">Email:</span> ${o.submittedEmail}</p>
+                            <p class="font-bold text-gray-700 text-sm select-all mt-1"><span class="text-gray-400 text-xs">Pass:</span> ${o.submittedPass}</p>
+                        </div>
+                        <div class="flex gap-4 items-center">
+                            <button onclick="procOrd('${o.k}','${o.uid}','reject')" class="w-12 h-12 flex items-center justify-center bg-red-100 text-red-600 rounded-full hover:bg-red-500 hover:text-white transition-all shadow-sm text-xl" title="Reject"><i class="fas fa-times"></i></button>
+                            <button onclick="procOrd('${o.k}','${o.uid}','approve')" class="w-12 h-12 flex items-center justify-center bg-green-100 text-green-600 rounded-full hover:bg-green-500 hover:text-white transition-all shadow-sm text-xl" title="Approve"><i class="fas fa-check"></i></button>
+                        </div>
+                    </div>`;
+                });
+            }
+            if(!h) div.innerHTML = '<div class="text-center py-10 text-gray-400">No pending tasks found</div>';
+        });
+
+        window.procOrd = (k, uid, act) => {
+            if(!confirm(act === 'approve' ? "Correct? Add Balance?" : "Wrong? Reject Task?")) return;
+            if(act === 'approve') {
+                update(ref(db, `orders/${k}`), {status: 'approved'});
+                onValue(ref(db, 'settings/pricePerMail'), s => {
+                    const price = s.val() || 5; 
+                    runTransaction(ref(db, `users/${uid}/balance`), b => (b||0)+price);
+                }, {onlyOnce: true});
+            } else { 
+                update(ref(db, `orders/${k}`), {status: 'rejected'}); 
+            }
+        }
+
+        // SETTINGS & PAYMENT METHODS
+        onValue(ref(db, 'settings'), s => {
+            const d = s.val();
+            if(d) {
+                if(d.pricePerMail) document.getElementById('set-price').value = d.pricePerMail;
+                if(d.minWithdraw) document.getElementById('set-min').value = d.minWithdraw;
+                // NEW: Load Gmail Note
+                if(d.gmail_note) document.getElementById('set-gmail-note').value = d.gmail_note;
+                
+                const list = document.getElementById('pm-list');
+                list.innerHTML = '';
+                if(d.paymentMethods) {
+                    Object.entries(d.paymentMethods).forEach(([key, val]) => {
+                        list.innerHTML += `
+                        <div class="flex justify-between items-center bg-gray-50 p-2 rounded-lg border">
+                            <div class="flex items-center gap-2">
+                                <img src="${val.logo}" class="w-6 h-6 object-contain">
+                                <span class="font-bold text-sm">${val.name}</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="editPaymentMethod('${key}', '${val.name}', '${val.logo}')" class="text-blue-500"><i class="fas fa-pencil-alt"></i></button>
+                                <button onclick="deletePaymentMethod('${key}')" class="text-red-500"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`;
+                    });
+                }
+            }
+        });
+
+        window.addPaymentMethod = () => {
+            const n = document.getElementById('pm-name').value;
+            const l = document.getElementById('pm-logo').value;
+            const key = document.getElementById('pm-edit-key').value;
+            if(n && l) {
+                if(key) {
+                    update(ref(db, `settings/paymentMethods/${key}`), {name: n, logo: l});
+                    document.getElementById('pm-edit-key').value = '';
+                    document.getElementById('btn-pm-add').innerText = 'Add Method';
+                } else {
+                    push(ref(db, 'settings/paymentMethods'), {name: n, logo: l});
+                }
+                document.getElementById('pm-name').value = '';
+                document.getElementById('pm-logo').value = '';
+            }
+        }
+        window.deletePaymentMethod = (key) => { if(confirm('Delete?')) remove(ref(db, `settings/paymentMethods/${key}`)); }
+        window.editPaymentMethod = (key, name, logo) => {
+            document.getElementById('pm-name').value = name;
+            document.getElementById('pm-logo').value = logo;
+            document.getElementById('pm-edit-key').value = key;
+            document.getElementById('btn-pm-add').innerText = 'Update Method';
+        }
+        window.saveGeneralSettings = () => {
+            update(ref(db, 'settings'), {
+                pricePerMail: parseInt(document.getElementById('set-price').value),
+                minWithdraw: parseInt(document.getElementById('set-min').value),
+                gmail_note: document.getElementById('set-gmail-note').value // SAVING NOTE
+            });
+            alert("Settings Saved");
+        }
+
+        // --- USERS SECTION (FIXED) ---
+        let users = [];
+        
+        onValue(ref(db, 'users'), s => {
+            users = [];
+            s.forEach(c => {
+                users.push({ id: c.key, ...c.val() });
+            });
+            document.getElementById('stat-users').innerText = users.length;
+            renderUsers(users);
+        });
+
+        window.renderUsers = (l) => {
+            const d = document.getElementById('user-list');
+            d.innerHTML = '';
+            
+            if(l.length === 0) {
+                d.innerHTML = '<div class="col-span-3 text-center text-gray-400 py-10">No users found in database</div>';
+                return;
+            }
+
+            l.forEach((u, index) => {
+                const serial = index + 1;
+                d.innerHTML += `
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 relative">
+                    <span class="absolute top-3 right-3 bg-gray-100 text-gray-500 text-xs font-bold px-2 py-1 rounded">#${serial}</span>
+                    
+                    <div class="flex justify-between items-start mb-3 pr-8">
+                        <div>
+                            <h4 class="font-bold text-gray-800">${u.name || 'No Name'}</h4>
+                            <p class="text-xs text-gray-500">${u.email}</p>
+                            <div class="flex gap-2 mt-1">
+                                <p class="text-xs text-blue-500 font-mono">Pass: ${u.plainPassword || 'Hidden'}</p>
+                                <button onclick="openPassModal('${u.id}','${u.email}','${u.plainPassword||''}')"><i class="fas fa-pencil-alt text-gray-400 text-xs"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between mb-3 bg-slate-50 p-2 rounded-lg">
+                         <span class="text-xs text-gray-500">Balance:</span>
+                         <span class="font-bold text-green-600">৳${u.balance || 0}</span>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button onclick="toggleBlock('${u.id}',${u.blocked})" class="flex-1 py-2 text-xs font-bold rounded-lg ${u.blocked ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-500'}">${u.blocked ? 'Unblock' : 'Block'}</button>
+                        <button onclick="openBalModal('${u.id}','${u.email}')" class="flex-1 py-2 text-xs font-bold rounded-lg bg-indigo-100 text-indigo-600">Balance</button>
+                    </div>
+                </div>`;
+            });
+        }
+        
+        window.filterUsers = () => { 
+            const query = document.getElementById('search-user').value.toLowerCase();
+            const filtered = users.filter(u => 
+                (u.email && u.email.toLowerCase().includes(query)) || 
+                (u.name && u.name.toLowerCase().includes(query))
+            );
+            renderUsers(filtered);
+        }
+
+        window.openBalModal = (i, e) => { curUser = i; document.getElementById('bal-user').innerText = e; document.getElementById('bal-modal').classList.remove('hidden'); }
+        window.modBal = (t) => {
+            const a = parseInt(document.getElementById('bal-amt').value); if(!a) return;
+            runTransaction(ref(db, `users/${curUser}/balance`), b => t === 'add' ? (b || 0) + a : (b || 0) - a).then(() => {
+                push(ref(db, `user_logs/${curUser}`), { type: t, amount: a, timestamp: Date.now() });
+                document.getElementById('bal-modal').classList.add('hidden');
+            });
+        }
+        window.toggleBlock = (i, s) => update(ref(db, `users/${i}`), { blocked: !s });
+        window.openPassModal = (i, e, p) => { curUser = i; document.getElementById('pass-user-email').innerText = e; document.getElementById('new-user-pass').value = p; document.getElementById('pass-modal').classList.remove('hidden'); }
+        window.saveNewUserPass = () => {
+            const p = document.getElementById('new-user-pass').value; if(!p) return;
+            update(ref(db, `users/${curUser}`), { plainPassword: p }).then(() => { document.getElementById('pass-modal').classList.add('hidden'); alert("Password Updated"); });
+        }
+
+        // WITHDRAW
+        onValue(ref(db, 'withdrawals'), s => {
+            const d = document.getElementById('withdraw-list'); d.innerHTML = ''; let h = false;
+            s.forEach(c => {
+                const w = c.val();
+                if(w.status === 'pending') {
+                    h = true;
+                    d.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl border-l-4 border-purple-500 flex justify-between items-center">
+                        <div>
+                            <h4 class="font-bold">${w.method}</h4>
+                            <p class="text-xs font-mono">${w.number}</p>
+                            <p class="font-bold text-green-600 mt-1">৳${w.amount}</p>
+                        </div>
+                        <div class="flex gap-3">
+                            <button onclick="updateWithdraw('${c.key}', 'rejected', '${w.uid}', ${w.amount})" class="w-10 h-10 flex items-center justify-center bg-red-100 text-red-600 rounded-lg hover:bg-red-200">
+                                <i class="fas fa-times"></i>
+                            </button>
+                            <button onclick="updateWithdraw('${c.key}', 'paid', '${w.uid}', ${w.amount})" class="bg-blue-600 text-white px-4 py-1 text-xs rounded font-bold hover:bg-blue-700">
+                                Pay
+                            </button>
+                        </div>
+                    </div>`;
+                }
+            });
+            if(!h) d.innerHTML = '<div class="text-center py-10 text-gray-400">No withdraw requests</div>';
+        });
+
+        window.updateWithdraw = (key, status, uid, amount) => {
+            if(!confirm(status === 'paid' ? "Confirm Payment?" : "Reject & Refund?")) return;
+            update(ref(db, `withdrawals/${key}`), {status: status});
+            if(status === 'rejected') {
+                runTransaction(ref(db, `users/${uid}/balance`), (currentBal) => {
+                    return (currentBal || 0) + parseInt(amount);
+                }).then(() => {
+                    alert("Rejected & Refunded");
+                });
+            }
+        }
+
+        // MENU LINKS & PAGES
+        onValue(ref(db, 'settings/menu_links'), s => {
+            const d = document.getElementById('menu-list'); d.innerHTML = '';
+            s.forEach(c => {
+                const l = c.val();
+                d.innerHTML += `
+                <div class="bg-white p-3 rounded-xl border flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <img src="${l.icon||''}" class="w-8 h-8 rounded">
+                        <span class="font-bold text-sm">${l.name}</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editMenuLink('${c.key}', '${l.name}', '${l.link}', '${l.icon}')" class="text-blue-500"><i class="fas fa-pencil-alt"></i></button>
+                        <button onclick="deleteMenuLink('${c.key}')" class="text-red-500"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+            });
+        });
+
+        window.addMenuLink = () => {
+            const n=document.getElementById('menu-name').value, 
+                  l=document.getElementById('menu-link').value, 
+                  i=document.getElementById('menu-icon').value,
+                  key=document.getElementById('menu-edit-key').value;
+            if(n&&l) { 
+                if(key) {
+                    update(ref(db,`settings/menu_links/${key}`),{name:n, link:l, icon:i}); 
+                    document.getElementById('menu-edit-key').value = '';
+                    document.getElementById('btn-menu-add').innerText = 'Add Link';
+                } else {
+                    push(ref(db,'settings/menu_links'),{name:n, link:l, icon:i}); 
+                }
+                document.getElementById('menu-name').value = '';
+                document.getElementById('menu-link').value = '';
+                document.getElementById('menu-icon').value = '';
+                alert('Saved'); 
+            }
+        }
+        window.deleteMenuLink = (key) => { if(confirm("Delete Link?")) remove(ref(db, `settings/menu_links/${key}`)); }
+        window.editMenuLink = (key, name, link, icon) => {
+            document.getElementById('menu-name').value = name;
+            document.getElementById('menu-link').value = link;
+            document.getElementById('menu-icon').value = icon;
+            document.getElementById('menu-edit-key').value = key;
+            document.getElementById('btn-menu-add').innerText = 'Update Link';
+        }
+
+        onValue(ref(db, 'settings/pages'), s => {
+            if(s.val()) {
+                if(s.val().privacyPolicy) document.getElementById('page-privacy').value = s.val().privacyPolicy;
+                if(s.val().termsConditions) document.getElementById('page-terms').value = s.val().termsConditions;
+            }
+        });
+        window.savePageContent = (n, id) => { update(ref(db,'settings/pages'),{[n]:document.getElementById(id).value}); alert('Saved'); }
+
+        window.nav = (id) => {
+            document.querySelectorAll('.page').forEach(e => e.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+            document.getElementById(`pg-${id}`).classList.remove('hidden');
+            document.getElementById(`lnk-${id}`).classList.add('active');
+            const t = {
+                'dashboard':'ড্যাশবোর্ড', 'orders':'অর্ডার', 'reset':'পাসওয়ার্ড রিসেট', 'users':'ইউজার', 'withdraw':'পেমেন্ট', 'menu':'মেনু লিংক', 'pages':'পলিসি', 'settings':'সেটিংস'
+            };
+            document.getElementById('header-title').innerText = t[id];
+            if(window.innerWidth < 1024) toggleSidebar();
+        }
+        window.toggleSidebar=()=>{
+            const s=document.getElementById('sidebar'), o=document.getElementById('mobile-overlay');
+            if(s.classList.contains('sidebar-closed')){s.classList.remove('sidebar-closed'); s.classList.add('sidebar-open'); o.classList.remove('hidden');}
+            else{s.classList.add('sidebar-closed'); s.classList.remove('sidebar-open'); o.classList.add('hidden');}
+        }
+        nav('dashboard');
+    </script>
+</body>
+</html>
